@@ -50,7 +50,6 @@ class NeuralNetwork:
             weights.append(np.random.randn(
                 self.hidden_units, self.hidden_units))
         weights.append(w_last)
-        print(weights[0].shape)
         return weights
 
     def convert_weights_to_genome(self):

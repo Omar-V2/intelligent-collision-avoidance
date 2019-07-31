@@ -3,6 +3,8 @@ import time
 import pygame
 import numpy as np
 
+from src.utils.math_tools import liangbarsky, get_distance
+
 
 class Agent:
     """
@@ -22,7 +24,7 @@ class Agent:
         self.sensors = []
         self.angle = 0  # agent's orientation
         self.manager = manager
-        self.base_speed = 1
+        self.base_speed = 5
         self.alive = True
         self.brain = brain
         self.fitness = 0
@@ -31,22 +33,24 @@ class Agent:
         self.hit_target = False
         self._attach_sensors(field_of_view, nb_sensors, max_range)
 
-    def move(self):
+    def move(self, x_change, y_change):
         """
         Handles the movement of the agent based on the output of the neural network.
         The neural network outputs two values based on the sensor reading inputs.
         One input controlles the speed and the other controlles the direction.
         """
         if self.alive:
-            brain_output = self.brain.forward(
-                [(sensor.reading / self.max_range) for sensor in self.sensors])
-            speed = brain_output[0]
-            angle = brain_output[1]
-            self.angle = np.interp(angle, [-1, 1], [-60, 60])
-            self.x += self.base_speed * speed * (m.cos(m.radians(self.angle)))
-            self.y += self.base_speed * speed * (m.sin(m.radians(self.angle)))
+            self.x += x_change
+            self.y += y_change
+            # brain_output = self.brain.forward(
+            #     [(sensor.reading / self.max_range) for sensor in self.sensors])
+            # speed = brain_output[0]
+            # angle = brain_output[1]
+            # self.angle = np.interp(angle, [-1, 1], [-60, 60])
+            # self.x += self.base_speed * speed * (m.cos(m.radians(self.angle)))
+            # self.y += self.base_speed * speed * (m.sin(m.radians(self.angle)))
 
-    def update(self, screen):
+    def update(self, screen, obstacles):
         """
         Responsible for drawing the agent onto the screen after it's position
         has been updated by the move function. Also check's if the agent has been
@@ -58,6 +62,14 @@ class Agent:
             for sensor in self.sensors:
                 sensor.update()
                 sensor.draw(screen)
+                for obstacle in obstacles:
+                    if sensor.in_range(obstacle):
+                        sensor.detect(screen, obstacle)
+                    else:
+                        if sensor.activated and sensor.current_obstacle == obstacle.id:
+                            sensor.reading = sensor.max_range
+                            sensor.activated = False
+                print(f"Sensor {sensor.tag} is: {sensor.reading}")
         # if time.time() - self.time_alive > 4:
         #     self.alive = False
 
@@ -96,6 +108,7 @@ class Sensor:
         self.tag = tag
         self.x0 = self.x1 = self.y0 = self.y1 = 0
         self.activated = False
+        self.current_obstacle = None
 
     def update(self):
         """
@@ -120,3 +133,57 @@ class Sensor:
             pygame.draw.line(screen, (0, 0, 0), (self.agent.x, self.agent.y), (self.x0, self.y0))
         if not self.activated:
             pygame.draw.circle(screen, (0, 255, 0), (int(self.x1), int(self.y1)), 1, 0)
+            # pygame.draw.line(screen, (0, 255, 0), (self.x0, self.y0), (self.x1, self.y1))
+
+    def detect(self, screen, obstacle):
+        """
+        Implementation of Liang-Barsky line clipping algorithm to
+        detect whether a line segment (the sensor) has intersected with an
+        obstacle, in this case a rectangle.
+        """
+        collision_pts = self._detect_rectangle(obstacle)
+        if collision_pts:
+            self.activated = True
+            self.current_obstacle = obstacle.id
+            x_coll, y_coll, _, _ = collision_pts
+            self.reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
+            pygame.draw.circle(screen, (0, 255, 0), (int(x_coll), int(y_coll)), 1, 0)
+        else:
+            print("here")*20
+            # pass
+            self.activated = False
+            self.reading = self.max_range
+    
+    def in_range(self, obstacle):
+        collision = self._detect_rectangle(obstacle)
+        if collision:
+            return True
+        return False
+
+    def _detect_rectangle(self, rectangle):
+        """
+        Implementation of Liang-Barsky line clipping algorithm to
+        detect whether a line segment (the sensor) has intersected with an
+        obstacle, in this case a rectangle.
+        """
+        # rectangle in pygame defined (start_x, start_y, width, height)
+        # origin is y_max left corner of screen, left ---> x_max is positive x
+        # and y_max to y_min is positve y.
+        x_min = rectangle.x
+        x_max = rectangle.x + rectangle.width
+        y_min = rectangle.y
+        y_max = rectangle.y + rectangle.height
+        collision_pts = liangbarsky(x_min, y_max, x_max, y_min, self.x0, self.y0, self.x1, self.y1)
+        return collision_pts
+
+
+
+
+
+if __name__ == "__main__":
+    line = [-5, 3, 15, 9]
+    rectangle = [0, 0, 10, 10]
+    # print(detect_rectangle(rectangle, line))
+    # print(liangbarsky(0, 10, 10, 0, -5, 3, 15, 9))
+    # print(liangbarsky(5, 9, 9, 5, 4, 12, 8, 8))
+    print(liangbarsky(230, 400, 430, 200, 185, 300, 260, 300))
