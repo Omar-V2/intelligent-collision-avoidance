@@ -31,10 +31,11 @@ def static_environment():
 
 agents = create_population(POPULATION_SIZE)
 rect = Rectangle(125, 50, 100, 200, (0, 0, 255), 1)
-rect2 = Rectangle(125, 360, 100, 10, (0, 0, 255), 2)
-rect3 = Rectangle(125, 390, 100, 10, (0, 0, 255), 3)
-rect4 = Rectangle(400, 330, 100, 10, (0, 0, 255), 4)
-obstacles = [rect, rect2, rect3, rect4]
+rect2 = Rectangle(125, 340, 100, 10, (0, 0, 255), 2)
+rect3 = Rectangle(125, 360, 100, 10, (0, 0, 255), 3)
+rect4 = Rectangle(125, 380, 100, 10, (0, 0, 255), 4)
+rect5 = Rectangle(400, 330, 100, 20, (0, 0, 255), 5)
+obstacles = [rect2, rect3, rect4, rect5]
 def run():
     """
     Begins the simulation
@@ -63,7 +64,7 @@ def run():
         static_environment()
         for obstacle in obstacles:
             obstacle.draw(SCREEN)
-            # obstacle.move()
+            obstacle.move(x_change, y_change)
         for agent in agents:
             agent.move(x_change, y_change)
             agent.update(SCREEN, obstacles)

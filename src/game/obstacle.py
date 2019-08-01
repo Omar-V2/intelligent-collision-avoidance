@@ -11,7 +11,7 @@ class Circle:
         self.y = y
         self.radius = radius
         self.colour = colour
-    
+
     def draw(self):
         pygame.draw.circle()
 
@@ -27,13 +27,14 @@ class Rectangle:
         self.height = height
         self.colour = colour
         self.id = id
-    
+
     def draw(self, screen):
         """
         Draws the rectangle on to the screen
         """
         pygame.draw.rect(screen, self.colour, (self.x, self.y, self.width, self.height), 0)
-    
-    def move(self):
-        if self.id == 1:
-            self.x += 1
+
+    def move(self, x_change, y_change):
+        if self.id == 3:
+            self.x += x_change
+            self.y += y_change

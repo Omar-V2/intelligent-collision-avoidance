@@ -4,7 +4,7 @@ import pygame
 import numpy as np
 
 from src.utils.math_tools import liangbarsky, get_distance
-
+from src.utils.text import display_text
 
 class Agent:
     """
@@ -37,18 +37,18 @@ class Agent:
         """
         Handles the movement of the agent based on the output of the neural network.
         The neural network outputs two values based on the sensor reading inputs.
-        One input controlles the speed and the other controlles the direction.
+        One input controls the speed and the other controls the direction.
         """
         if self.alive:
-            self.x += x_change
-            self.y += y_change
-            # brain_output = self.brain.forward(
-            #     [(sensor.reading / self.max_range) for sensor in self.sensors])
-            # speed = brain_output[0]
-            # angle = brain_output[1]
-            # self.angle = np.interp(angle, [-1, 1], [-60, 60])
-            # self.x += self.base_speed * speed * (m.cos(m.radians(self.angle)))
-            # self.y += self.base_speed * speed * (m.sin(m.radians(self.angle)))
+            # self.x += x_change
+            # self.y += y_change
+            brain_output = self.brain.forward(
+                [(sensor.reading / self.max_range) for sensor in self.sensors])
+            speed = brain_output[0]
+            angle = brain_output[1]
+            self.angle = np.interp(angle, [-1, 1], [-60, 60])
+            self.x += self.base_speed * speed * (m.cos(m.radians(self.angle)))
+            self.y += self.base_speed * speed * (m.sin(m.radians(self.angle)))
 
     def update(self, screen, obstacles):
         """
@@ -57,6 +57,7 @@ class Agent:
         alive longer than a specified threshold and kills it if it has.
         """
         if self.alive:
+            text = ''
             pygame.draw.circle(screen, self.colour,
                                (int(self.x), int(self.y)), self.size, 0)
             for sensor in self.sensors:
@@ -67,9 +68,22 @@ class Agent:
                         sensor.detect(screen, obstacle)
                     else:
                         if sensor.activated and sensor.current_obstacle == obstacle.id:
-                            sensor.reading = sensor.max_range
                             sensor.activated = False
-                print(f"Sensor {sensor.tag} is: {sensor.reading}")
+                            sensor.reading = sensor.max_range
+                            sensor.current_obstacle = None
+                            # if sensor.possible_collision:
+                            #     best = min(sensor.possible_collision, key=lambda t: t[1])
+                            #     sensor.reading = best[1]
+                            #     sensor.current_obstacle = best[0]
+                            # else:
+                            #     sensor.reading = sensor.max_range
+                            #     sensor.current_obstacle = None
+                if sensor.tag == 1:
+                    if sensor.reading == 75:
+                        print(f"Sensor {sensor.tag} is: {sensor.reading}")
+                    text = f"Sensor {sensor.tag}: {sensor.reading}"
+                    display_text(screen, text)
+
         # if time.time() - self.time_alive > 4:
         #     self.alive = False
 
@@ -109,6 +123,7 @@ class Sensor:
         self.x0 = self.x1 = self.y0 = self.y1 = 0
         self.activated = False
         self.current_obstacle = None
+        self.possible_collision = []
 
     def update(self):
         """
@@ -141,30 +156,40 @@ class Sensor:
         detect whether a line segment (the sensor) has intersected with an
         obstacle, in this case a rectangle.
         """
+        # I don't even know why this works lmao.
         collision_pts = self._detect_rectangle(obstacle)
-        if collision_pts:
-            self.activated = True
-            self.current_obstacle = obstacle.id
+        if self.current_obstacle and self.current_obstacle != obstacle.id:
+            # display_text(screen, "new obstacle")
+            if self.activated:
+                x_coll, y_coll, _, _ = collision_pts
+                new_reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
+                if new_reading < self.reading:
+                    # display_text(screen, "new reading smaller")
+                    self.current_obstacle = obstacle.id
+                    self.reading = new_reading
+        else:
+            # display_text(screen, "here")
             x_coll, y_coll, _, _ = collision_pts
             self.reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
-            pygame.draw.circle(screen, (0, 255, 0), (int(x_coll), int(y_coll)), 1, 0)
-        else:
-            print("here")*20
-            # pass
-            self.activated = False
-            self.reading = self.max_range
-    
+            self.activated = True
+            self.current_obstacle = obstacle.id
+        x_coll, y_coll, _, _ = collision_pts
+        pygame.draw.circle(screen, (0, 255, 0), (int(x_coll), int(y_coll)), 1, 0)
+
     def in_range(self, obstacle):
         collision = self._detect_rectangle(obstacle)
         if collision:
+            x_coll, y_coll, _, _ = collision
+            distance = get_distance((self.x0, self.y0), (x_coll, y_coll))
+            self.possible_collision.append((obstacle, distance))
             return True
         return False
 
     def _detect_rectangle(self, rectangle):
         """
-        Implementation of Liang-Barsky line clipping algorithm to
-        detect whether a line segment (the sensor) has intersected with an
-        obstacle, in this case a rectangle.
+        Uses the Liang-Barsky line clipping algorithm to
+        detect intersections between a line segment (the sensor) and an
+        obstacle, in this case a rectangle. Returns the coordinates of the intersction.
         """
         # rectangle in pygame defined (start_x, start_y, width, height)
         # origin is y_max left corner of screen, left ---> x_max is positive x
