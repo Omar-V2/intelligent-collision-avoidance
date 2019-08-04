@@ -5,7 +5,7 @@ class GameSettings:
     CAPTION = "Evolution Simulation"
 
 class EvolutionSettings:
-    POPULATION_SIZE = 15
+    POPULATION_SIZE = 30
     ELITISM = 0
 
 class NeuralNetworkSettings:

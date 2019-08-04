@@ -27,6 +27,9 @@ class Rectangle:
         self.height = height
         self.colour = colour
         self.id = id
+    
+    def __repr__(self):
+        return str(self.id)
 
     def draw(self, screen):
         """
@@ -35,6 +38,6 @@ class Rectangle:
         pygame.draw.rect(screen, self.colour, (self.x, self.y, self.width, self.height), 0)
 
     def move(self, x_change, y_change):
-        if self.id == 3:
+        if self.id == 2:
             self.x += x_change
             self.y += y_change

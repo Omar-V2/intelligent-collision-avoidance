@@ -5,6 +5,7 @@ import numpy as np
 
 from src.utils.math_tools import liangbarsky, get_distance
 from src.utils.text import display_text
+from src.game.game_settings import GameSettings
 
 class Agent:
     """
@@ -12,6 +13,7 @@ class Agent:
     primary functions such as movment, visual updates, interfacing with sensors
     fitness evalutation and dying.
     """
+    death_count = 0
 
     def __init__(self, x, y, size, field_of_view, nb_sensors, max_range, manager, brain):
         self.x = x
@@ -37,11 +39,9 @@ class Agent:
         """
         Handles the movement of the agent based on the output of the neural network.
         The neural network outputs two values based on the sensor reading inputs.
-        One input controls the speed and the other controls the direction.
+        One output controls the speed and the other controls the direction.
         """
         if self.alive:
-            # self.x += x_change
-            # self.y += y_change
             brain_output = self.brain.forward(
                 [(sensor.reading / self.max_range) for sensor in self.sensors])
             speed = brain_output[0]
@@ -57,38 +57,36 @@ class Agent:
         alive longer than a specified threshold and kills it if it has.
         """
         if self.alive:
-            text = ''
             pygame.draw.circle(screen, self.colour,
                                (int(self.x), int(self.y)), self.size, 0)
             for sensor in self.sensors:
                 sensor.update()
                 sensor.draw(screen)
                 for obstacle in obstacles:
+                    self._collide(obstacle)
                     if sensor.in_range(obstacle):
                         sensor.detect(screen, obstacle)
                     else:
                         if sensor.activated and sensor.current_obstacle == obstacle.id:
-                            sensor.activated = False
-                            sensor.reading = sensor.max_range
-                            sensor.current_obstacle = None
-                            # if sensor.possible_collision:
-                            #     best = min(sensor.possible_collision, key=lambda t: t[1])
-                            #     sensor.reading = best[1]
-                            #     sensor.current_obstacle = best[0]
-                            # else:
-                            #     sensor.reading = sensor.max_range
-                            #     sensor.current_obstacle = None
-                if sensor.tag == 1:
-                    if sensor.reading == 75:
-                        print(f"Sensor {sensor.tag} is: {sensor.reading}")
-                    text = f"Sensor {sensor.tag}: {sensor.reading}"
-                    display_text(screen, text)
-
+                            sensor.handle_obstacle_exit()
         # if time.time() - self.time_alive > 4:
         #     self.alive = False
 
-    def collide(self):
-        pass
+    def _collide(self, obstacle):
+        """
+        Checks for collision between the agent and the obstacle, or
+        between agent and map boundary. If there is a collision, the agent is killed.
+        """
+        if self.alive:
+            if self.x <= 10 or self.y <= 10 or self.y >= GameSettings.HEIGHT - 20 \
+                or self.x >= GameSettings.WIDTH - 20:
+                self.alive = False
+                Agent.death_count += 1
+            delta_x = self.x - max(obstacle.x, min(self.x, obstacle.x + obstacle.width))
+            delta_y = self.y - max(obstacle.y, min(self.y, obstacle.y + obstacle.height))
+            if ((delta_x**2) + (delta_y**2)) < self.size**2:
+                self.alive = False
+                Agent.death_count += 1
 
     def evaluate_fitness(self):
         """
@@ -123,7 +121,7 @@ class Sensor:
         self.x0 = self.x1 = self.y0 = self.y1 = 0
         self.activated = False
         self.current_obstacle = None
-        self.possible_collision = []
+        self.engaged_obstacles = []
 
     def update(self):
         """
@@ -156,34 +154,75 @@ class Sensor:
         detect whether a line segment (the sensor) has intersected with an
         obstacle, in this case a rectangle.
         """
-        # I don't even know why this works lmao.
         collision_pts = self._detect_rectangle(obstacle)
         if self.current_obstacle and self.current_obstacle != obstacle.id:
-            # display_text(screen, "new obstacle")
-            if self.activated:
-                x_coll, y_coll, _, _ = collision_pts
-                new_reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
-                if new_reading < self.reading:
-                    # display_text(screen, "new reading smaller")
-                    self.current_obstacle = obstacle.id
-                    self.reading = new_reading
+            self._handle_additional_obstacle(obstacle, collision_pts)
         else:
-            # display_text(screen, "here")
             x_coll, y_coll, _, _ = collision_pts
             self.reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
+            pygame.draw.line(screen, (255, 0, 0), (self.x0, self.y0), (x_coll, y_coll))
             self.activated = True
             self.current_obstacle = obstacle.id
+
+    def _handle_additional_obstacle(self, obstacle, collision_pts):
+        """
+        When an obstacle intersects a sesnor that is already activated (by another obstacle)
+        this function checks to determine which obstacle is closer to the sensor and updates
+        the sensor reading and current obstacle variable accordingly.
+        """
         x_coll, y_coll, _, _ = collision_pts
-        pygame.draw.circle(screen, (0, 255, 0), (int(x_coll), int(y_coll)), 1, 0)
+        new_reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
+        if new_reading < self.reading:
+            self.current_obstacle = obstacle.id
+            self.reading = new_reading
+
+    def handle_obstacle_exit(self):
+        """
+        Resets sensor and the current obstacle variable
+        when the obstacle that initially activated the sensor has disengaged.
+        """
+        if len(self.engaged_obstacles) > 1:
+            readings = []
+            for obstacle in self.engaged_obstacles:
+                # find closest, set reading to that one
+                coll = self._detect_rectangle(obstacle)
+                if coll:
+                    x_coll, y_coll, _, _ = coll
+                    distance = get_distance((self.x0, self.y0), (x_coll, y_coll))
+                    readings.append(distance)
+                    lowest_reading_idx = readings.index(min(readings))
+                    self.reading = readings[lowest_reading_idx]
+                    self.current_obstacle = None
+        elif len(self.engaged_obstacles) == 1:
+            # get distance of only obstacle set reading to that
+            coll = self._detect_rectangle(self.engaged_obstacles[0])
+            if coll:
+                x_coll, y_coll, _, _ = coll
+                distance = get_distance((self.x0, self.y0), (x_coll, y_coll))
+                self.reading = distance
+                self.current_obstacle = None
+        else:
+            self.activated = False
+            self.reading = self.max_range
+            self.current_obstacle = None
+
+    def handle_obstacle_entry(self, obstacle):
+        pass
 
     def in_range(self, obstacle):
+        """
+        Return true if the obstacle intersects with the sensor
+        and false otherwise.
+        """
         collision = self._detect_rectangle(obstacle)
         if collision:
-            x_coll, y_coll, _, _ = collision
-            distance = get_distance((self.x0, self.y0), (x_coll, y_coll))
-            self.possible_collision.append((obstacle, distance))
+            if obstacle not in self.engaged_obstacles:
+                self.engaged_obstacles.append(obstacle)
             return True
-        return False
+        else:
+            if obstacle in self.engaged_obstacles:
+                self.engaged_obstacles.remove(obstacle)
+            return False
 
     def _detect_rectangle(self, rectangle):
         """
@@ -191,24 +230,9 @@ class Sensor:
         detect intersections between a line segment (the sensor) and an
         obstacle, in this case a rectangle. Returns the coordinates of the intersction.
         """
-        # rectangle in pygame defined (start_x, start_y, width, height)
-        # origin is y_max left corner of screen, left ---> x_max is positive x
-        # and y_max to y_min is positve y.
         x_min = rectangle.x
         x_max = rectangle.x + rectangle.width
         y_min = rectangle.y
         y_max = rectangle.y + rectangle.height
         collision_pts = liangbarsky(x_min, y_max, x_max, y_min, self.x0, self.y0, self.x1, self.y1)
         return collision_pts
-
-
-
-
-
-if __name__ == "__main__":
-    line = [-5, 3, 15, 9]
-    rectangle = [0, 0, 10, 10]
-    # print(detect_rectangle(rectangle, line))
-    # print(liangbarsky(0, 10, 10, 0, -5, 3, 15, 9))
-    # print(liangbarsky(5, 9, 9, 5, 4, 12, 8, 8))
-    print(liangbarsky(230, 400, 430, 200, 185, 300, 260, 300))
