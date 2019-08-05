@@ -34,7 +34,7 @@ class Agent:
         self.hit_target = False
         self._attach_sensors(field_of_view, nb_sensors, max_range)
 
-    def move(self, x_change, y_change):
+    def move(self):
         """
         Handles the movement of the agent based on the output of the neural network.
         The neural network outputs two values based on the sensor reading inputs.
@@ -81,9 +81,7 @@ class Agent:
                 or self.x >= GameSettings.WIDTH - 20:
                 self.alive = False
                 Agent.death_count += 1
-            delta_x = self.x - max(obstacle.x, min(self.x, obstacle.x + obstacle.width))
-            delta_y = self.y - max(obstacle.y, min(self.y, obstacle.y + obstacle.height))
-            if ((delta_x**2) + (delta_y**2)) < self.size**2:
+            if obstacle.collide(self):
                 self.alive = False
                 Agent.death_count += 1
 
@@ -145,32 +143,31 @@ class Sensor:
             pygame.draw.line(screen, (0, 0, 0), (self.agent.x, self.agent.y), (self.x0, self.y0))
         if not self.activated:
             pygame.draw.circle(screen, (0, 255, 0), (int(self.x1), int(self.y1)), 1, 0)
-            # pygame.draw.line(screen, (0, 255, 0), (self.x0, self.y0), (self.x1, self.y1))
 
     def detect(self, screen, obstacle):
         """
-        Implementation of Liang-Barsky line clipping algorithm to
-        detect whether a line segment (the sensor) has intersected with an
-        obstacle, in this case a rectangle.
+        Handles all obstacle detection logic, that is if sensor is tripped by 
+        only a single obstacle or multiple obstacles. This funciton will handle
+        the logic to make sure the correct reading is set for the sensor.
         """
-        collision_pts = self._detect_rectangle(obstacle)
+        intersection_pts = obstacle.intersect(self)
         if self.current_obstacle and self.current_obstacle != obstacle.id:
-            self._handle_additional_obstacle(obstacle, collision_pts)
+            self._handle_additional_obstacle(obstacle, intersection_pts)
         else:
-            x_coll, y_coll, _, _ = collision_pts
+            x_coll, y_coll, _, _ = intersection_pts
             self.reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
             pygame.draw.line(screen, (255, 0, 0), (self.x0, self.y0), (x_coll, y_coll))
             pygame.draw.circle(screen, (255, 0, 0), (int(x_coll), int(y_coll)), 1, 0)
             self.activated = True
             self.current_obstacle = obstacle.id
 
-    def _handle_additional_obstacle(self, obstacle, collision_pts):
+    def _handle_additional_obstacle(self, obstacle, intersection_pts):
         """
         When an obstacle intersects a sesnor that is already activated (by another obstacle)
         this function checks to determine which obstacle is closer to the sensor and updates
         the sensor reading and current obstacle variable accordingly.
         """
-        x_coll, y_coll, _, _ = collision_pts
+        x_coll, y_coll, _, _ = intersection_pts
         new_reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
         if new_reading < self.reading:
             self.current_obstacle = obstacle.id
@@ -185,7 +182,7 @@ class Sensor:
             readings = []
             for obstacle in self.engaged_obstacles:
                 # find closest, set reading to that one
-                coll = self._detect_rectangle(obstacle)
+                coll = obstacle.intersect(self)
                 if coll:
                     x_coll, y_coll, _, _ = coll
                     distance = get_distance((self.x0, self.y0), (x_coll, y_coll))
@@ -195,7 +192,7 @@ class Sensor:
                     self.current_obstacle = None
         elif len(self.engaged_obstacles) == 1:
             # get distance of only obstacle set reading to that
-            coll = self._detect_rectangle(self.engaged_obstacles[0])
+            coll = self.engaged_obstacles[0].intersect(self)
             if coll:
                 x_coll, y_coll, _, _ = coll
                 distance = get_distance((self.x0, self.y0), (x_coll, y_coll))
@@ -211,7 +208,7 @@ class Sensor:
         Return true if the obstacle intersects with the sensor
         and false otherwise.
         """
-        collision = self._detect_rectangle(obstacle)
+        collision = obstacle.intersect(self)
         if collision:
             if obstacle not in self.engaged_obstacles:
                 self.engaged_obstacles.append(obstacle)
@@ -220,16 +217,3 @@ class Sensor:
             if obstacle in self.engaged_obstacles:
                 self.engaged_obstacles.remove(obstacle)
             return False
-
-    def _detect_rectangle(self, rectangle):
-        """
-        Uses the Liang-Barsky line clipping algorithm to
-        detect intersections between a line segment (the sensor) and an
-        obstacle, in this case a rectangle. Returns the coordinates of the intersction.
-        """
-        x_min = rectangle.x
-        x_max = rectangle.x + rectangle.width
-        y_min = rectangle.y
-        y_max = rectangle.y + rectangle.height
-        collision_pts = liangbarsky(x_min, y_max, x_max, y_min, self.x0, self.y0, self.x1, self.y1)
-        return collision_pts

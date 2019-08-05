@@ -66,7 +66,7 @@ def run():
             obstacle.draw(SCREEN)
             obstacle.move(x_change, y_change)
         for agent in agents:
-            agent.move(x_change, y_change)
+            agent.move()
             agent.update(SCREEN, obstacles)
         pygame.display.update()
 
