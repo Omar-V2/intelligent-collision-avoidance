@@ -1,7 +1,7 @@
 import pygame
 from src.common.constants import GameSettings, EvolutionSettings
 from src.game.create_population import create_population
-from src.game.obstacle import Rectangle
+from src.game.obstacle import Rectangle, Circle
 
 # game settings
 pygame.init()
@@ -35,7 +35,8 @@ rect2 = Rectangle(125, 340, 100, 10, (0, 0, 255), 2)
 rect3 = Rectangle(125, 360, 100, 10, (0, 0, 255), 3)
 rect4 = Rectangle(125, 380, 100, 10, (0, 0, 255), 4)
 rect5 = Rectangle(400, 330, 100, 20, (0, 0, 255), 5)
-obstacles = [rect2, rect3, rect4, rect5]
+circle = Circle(220, 300, 15, (255, 0, 0), 6)
+obstacles = [rect2, rect3, rect4, rect5, circle]
 def run():
     """
     Begins the simulation
@@ -64,9 +65,9 @@ def run():
         static_environment()
         for obstacle in obstacles:
             obstacle.draw(SCREEN)
-            obstacle.move(x_change, y_change)
+            # obstacle.move(x_change, y_change)
         for agent in agents:
-            agent.move()
+            agent.move(x_change, y_change)
             agent.update(SCREEN, obstacles)
         pygame.display.update()
 

@@ -2,31 +2,43 @@ import math as m
 import numpy as np
 import pygame
 
-from src.utils.math_tools import liangbarsky
+from src.utils.math_tools import liangbarsky, get_distance
 
 class Circle:
     """
-    Class for defining obstacles
+    Circle class which serves as an obstacles.
     """
-    def __init__(self, x, y, radius, colour):
+    def __init__(self, x, y, radius, colour, id):
         self.x = x
         self.y = y
         self.radius = radius
         self.colour = colour
+        self.id = id
 
-    def draw(self):
-        pygame.draw.circle()
+    def draw(self, screen):
+        """
+        Draws the circle on to the screen.
+        """
+        pygame.draw.circle(screen, self.colour, (self.x, self.y), self.radius, 0)
 
     def collide(self, agent):
-        pass
+        """
+        Returns True if the agent has collided with the circle
+        and False otherwise.
+        """
+        distance = get_distance((self.x, self.y), (agent.x, agent.y))
+        return distance**2 < (self.radius + agent.size)**2
 
     def intersect(self, sensor):
+        pass
+    
+    def move(self, x_change, y_change):
         pass
 
 
 class Rectangle:
     """
-    Rectangle class which serves as an obstacle
+    Rectangle class which serves as an obstacle.
     """
     def __init__(self, x, y, width, height, colour, id):
         self.x = x
@@ -41,7 +53,7 @@ class Rectangle:
 
     def draw(self, screen):
         """
-        Draws the rectangle on to the screen
+        Draws the rectangle on to the screen.
         """
         pygame.draw.rect(screen, self.colour, (self.x, self.y, self.width, self.height), 0)
 

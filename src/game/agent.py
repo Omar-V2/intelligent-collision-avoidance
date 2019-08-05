@@ -34,13 +34,15 @@ class Agent:
         self.hit_target = False
         self._attach_sensors(field_of_view, nb_sensors, max_range)
 
-    def move(self):
+    def move(self, x_change, y_change):
         """
         Handles the movement of the agent based on the output of the neural network.
         The neural network outputs two values based on the sensor reading inputs.
         One output controls the speed and the other controls the direction.
         """
         if self.alive:
+            # self.x += x_change
+            # self.y += y_change
             brain_output = self.brain.forward(
                 [(sensor.reading / self.max_range) for sensor in self.sensors])
             speed = brain_output[0]

@@ -47,6 +47,9 @@ def liangbarsky(x_min, y_max, x_max, y_min, x1, y1, x2, y2):
         y2 = yy1 + dt1 * dy
     return x1, y1, x2, y2
 
+def circle_line_intersection(line_start, line_end, circle_centre, radius):
+    pass
+
 
 def get_distance(vec_1, vec_2):
     """
