@@ -4,8 +4,7 @@ import pygame
 import numpy as np
 
 from src.utils.math_tools import liangbarsky, get_distance
-from src.utils.text import display_text
-from src.game.game_settings import GameSettings
+from src.common.constants import GameSettings
 
 class Agent:
     """
@@ -161,6 +160,7 @@ class Sensor:
             x_coll, y_coll, _, _ = collision_pts
             self.reading = get_distance((self.x0, self.y0), (x_coll, y_coll))
             pygame.draw.line(screen, (255, 0, 0), (self.x0, self.y0), (x_coll, y_coll))
+            pygame.draw.circle(screen, (255, 0, 0), (int(x_coll), int(y_coll)), 1, 0)
             self.activated = True
             self.current_obstacle = obstacle.id
 
@@ -205,9 +205,6 @@ class Sensor:
             self.activated = False
             self.reading = self.max_range
             self.current_obstacle = None
-
-    def handle_obstacle_entry(self, obstacle):
-        pass
 
     def in_range(self, obstacle):
         """

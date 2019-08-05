@@ -1,5 +1,5 @@
 import pygame
-from src.game.game_settings import GameSettings, EvolutionSettings
+from src.common.constants import GameSettings, EvolutionSettings
 from src.game.create_population import create_population
 from src.game.obstacle import Rectangle
 
