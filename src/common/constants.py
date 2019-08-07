@@ -13,7 +13,7 @@ class AgentSettings:
     MAX_RANGE = 75
 
 class EvolutionSettings:
-    POPULATION_SIZE = 30
+    POPULATION_SIZE = 50
     ELITISM = 0
     MUTATION_RATE = 0
 
