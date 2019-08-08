@@ -15,9 +15,9 @@ class NeuralNetwork:
         if new_weights:
             self.weights = new_weights
         else:
-            self.weights = self.create_weights()
+            self.weights = self._create_weights()
 
-    def activation(self, z, tanh=True):
+    def _activation(self, z, tanh=True):
         """
         The activation function used in the neural network
         can be either the hyperbolic tanget or the logistic function.
@@ -31,17 +31,17 @@ class NeuralNetwork:
         """
         Performs forward propagation on an initial given input matrix, x
         """
-        new_x = self.activation(np.dot(initial_x, self.weights[0]))
+        new_x = self._activation(np.dot(initial_x, self.weights[0]))
         for i in self.weights[1:]:
             new_x = np.dot(new_x, i)
-            new_x = self.activation(new_x)
+            new_x = self._activation(new_x)
         return new_x
 
-    def create_weights(self):
+    def _create_weights(self):
         """
-        Returns an multi-dimensional np array which serve as the starting weights
+        Returns a list of np arrays which serve as the starting weights
         for the neural network, these weights are intiliased randomly
-        from a normal distribution.
+        from a normal distribution with mean 0.
         """
         w_first = np.random.randn(self.input_units, self.hidden_units)
         w_last = np.random.randn(self.hidden_units, self.outputs)
@@ -54,15 +54,26 @@ class NeuralNetwork:
 
     def convert_weights_to_genome(self):
         """
-        Takes the weights of the network as a mutli-dimensional np array
-        and converts them into a single unrolled 1-D array (a genome)
+        Takes the weights of the network as a list of np arrays
+        and converts them into a single unrolled 1-D np array (a genome)
         """
-        return self.weights.flatten()
+        flattened_weights = [w.flatten() for w in self.weights]
+        genome = np.concatenate(flattened_weights)
+        return genome
 
     def convert_genome_to_weights(self, genome):
         """
-        Takes a 1-D np array, ther genome, and reshapes it into the n-dimensional
-        np array where n is in accordance with the architecture defined by the neural
-        network instnace.
+        Takes a 1-D np array, the genome, and reshapes it into the a list of
+        np arrays.
         """
-        return genome.reshape(self.weights.shape)
+        shapes = [np.shape(s) for s in self.weights]
+        products = [i[0]*i[1] for i in shapes]
+        weights = []
+        start_idx = 0
+        for i in range(len(products)):
+            stop_idx = sum(products[:i+1])
+            # reshape such that each weight matrix matches the original NN dimensions
+            weight = np.reshape(genome[start_idx:stop_idx], shapes[i])
+            weights.append(weight)
+            start_idx += products[i]
+        return weights

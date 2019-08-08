@@ -1,7 +1,9 @@
 import pygame
 from src.common.constants import GameSettings, EvolutionSettings
 from src.game.create_population import create_population
+from src.game.create_map import create_map
 from src.game.obstacle import Rectangle, Circle
+from src.learning.evolution import Evolution
 
 # game settings
 pygame.init()
@@ -26,17 +28,11 @@ def static_environment():
     pygame.draw.rect(SCREEN, (255, 255, 255),
                      (10, 10, WIDTH - 20, HEIGHT - 20), 1)
     pygame.draw.circle(SCREEN, (255, 10, 0), TARGET_LOCATION, 10, 0)
-    pygame.draw.circle(SCREEN, (255, 10, 0), TARGET_LOCATION, 10, 0)
-    # pygame.draw.rect(SCREEN, (0, 0, 255), (230, 200, 200, 200), 0)
 
 agents = create_population(POPULATION_SIZE)
-rect = Rectangle(125, 50, 100, 200, (0, 0, 255), 1)
-rect2 = Rectangle(125, 340, 100, 10, (0, 0, 255), 2)
-rect3 = Rectangle(125, 360, 100, 10, (0, 0, 255), 3)
-rect4 = Rectangle(125, 380, 100, 10, (0, 0, 255), 4)
-rect5 = Rectangle(400, 330, 100, 20, (0, 0, 255), 5)
-circle = Circle(220, 300, 15, (255, 0, 0), 6)
-obstacles = [rect2, rect3, rect4, rect5, circle]
+evolution = Evolution(agents, 10, 0.01, len(agents))
+obstacles = create_map()
+
 def run():
     """
     Begins the simulation
@@ -66,9 +62,12 @@ def run():
         for obstacle in obstacles:
             obstacle.draw(SCREEN)
             # obstacle.move(x_change, y_change)
-        for agent in agents:
+        for agent in evolution.population:
             agent.move(x_change, y_change)
             agent.update(SCREEN, obstacles)
+        #     agent.evaluate_fitness()
+        # if evolution.check_if_all_dead():
+        #     evolution.make_next_generation()
         pygame.display.update()
 
 

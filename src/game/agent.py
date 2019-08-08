@@ -5,6 +5,7 @@ import numpy as np
 
 from src.utils.math_tools import liangbarsky, get_distance
 from src.common.constants import GameSettings
+from src.utils.text import display_text
 
 class Agent:
     """
@@ -41,15 +42,15 @@ class Agent:
         One output controls the speed and the other controls the direction.
         """
         if self.alive:
-            # self.x += x_change
-            # self.y += y_change
-            brain_output = self.brain.forward(
-                [(sensor.reading / self.max_range) for sensor in self.sensors])
-            speed = brain_output[0]
-            angle = brain_output[1]
-            self.angle = np.interp(angle, [-1, 1], [-60, 60])
-            self.x += self.base_speed * speed * (m.cos(m.radians(self.angle)))
-            self.y += self.base_speed * speed * (m.sin(m.radians(self.angle)))
+            self.x += x_change
+            self.y += y_change
+            # brain_output = self.brain.forward(
+            #     [(sensor.reading / self.max_range) for sensor in self.sensors])
+            # speed = brain_output[0]
+            # angle = brain_output[1]
+            # self.angle = np.interp(angle, [-1, 1], [-60, 60])
+            # self.x += self.base_speed * speed * (m.cos(m.radians(self.angle)))
+            # self.y += self.base_speed * speed * (m.sin(m.radians(self.angle)))
 
     def update(self, screen, obstacles):
         """
@@ -70,8 +71,12 @@ class Agent:
                     else:
                         if sensor.activated and sensor.current_obstacle == obstacle.id:
                             sensor.handle_obstacle_exit()
-        # if time.time() - self.time_alive > 4:
-        #     self.alive = False
+                    if sensor.tag == 1:
+                        display_text(screen, f"Sensor Reading 1 is : {sensor.reading}", 20)
+        # if self.alive:
+        #     if time.time() - self.time_alive > 5:
+        #         self.alive = False
+        #         Agent.death_count += 1
 
     def _collide(self, obstacle):
         """
@@ -91,7 +96,8 @@ class Agent:
         """
         Scores the agent based on how well it performed on the task.
         """
-        pass
+        distance_to_target = get_distance((self.x, self.y), GameSettings.TARGET_LOCATION)
+        self.fitness = 1 / distance_to_target
 
     def _attach_sensors(self, field_of_view, nb_sensors, max_range):
         interval = field_of_view / nb_sensors

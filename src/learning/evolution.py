@@ -25,7 +25,7 @@ class Evolution:
         """
         Checks if all the members of the population have died.
         """
-        if Agent.death_count == len(self.population):
+        if Agent.death_count >= len(self.population):
             return True
         return False
 
@@ -48,7 +48,8 @@ class Evolution:
         where n is the elitism value. Truncation selection
         """
         self.population.sort(key=lambda x: x.fitness)
-        return self.population[-self.elitism:]
+        fittest = self.population[-self.elitism:]
+        return random.choice(fittest)
 
     def _choose_parents_roulette(self, cumulative_fitness):
         """
@@ -93,7 +94,7 @@ class Evolution:
         first_parent_genome = first_parent.brain.convert_weights_to_genome()
         second_parent_genome = second_parent.brain.convert_weights_to_genome()
         for i in range(len(first_parent_genome)):
-            if random.random > 0.5:
+            if random.random() > 0.5:
                 child_genome.append(first_parent_genome[i])
             else:
                 child_genome.append(second_parent_genome[i])
@@ -120,8 +121,11 @@ class Evolution:
         cumulative_fitness = self._get_cumulative_fitness()
         next_generation = []
         for _ in range(self.population_size):
-            parent_one = self._choose_parents_roulette(cumulative_fitness)
-            parent_two = self._choose_parents_roulette(cumulative_fitness)
+            parent_one = self._choose_parents()
+            parent_two = self._choose_parents()
+            # parent_one = self._choose_parents_roulette(cumulative_fitness)
+            # parent_two = self._choose_parents_roulette(cumulative_fitness)
             child = self._create_child(parent_one, parent_two)
             next_generation.append(child)
+        Agent.death_count = 0
         self.population = next_generation

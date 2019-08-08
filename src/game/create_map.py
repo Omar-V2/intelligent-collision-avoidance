@@ -1,4 +1,3 @@
-import random
 from src.game.obstacle import Rectangle, Circle
 
 def create_map():
@@ -7,4 +6,8 @@ def create_map():
     that will serve as map/obstacle course for the agents to traverse through
     wihtou any collisions.
     """
-    pass
+    obstacles = []
+    obstacles.append(Rectangle(280, 125, 100, 50, (0, 0, 255), 1))
+    obstacles.append(Rectangle(280, 425, 100, 50, (0, 0, 255), 1))
+    obstacles.append(Rectangle(280, 210, 50, 150, (0, 0, 255), 1))
+    return obstacles
