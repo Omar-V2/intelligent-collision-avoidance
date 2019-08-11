@@ -13,12 +13,12 @@ class AgentSettings:
     MAX_RANGE = 75
 
 class EvolutionSettings:
-    POPULATION_SIZE = 1
-    ELITISM = 0
-    MUTATION_RATE = 0
+    POPULATION_SIZE = 100
+    ELITISM = int(POPULATION_SIZE / 10)
+    MUTATION_RATE = 0.005
 
 class NeuralNetworkSettings:
     INPUT_UNITS = AgentSettings.NB_SENSORS
-    HIDDEN_UNITS = 5
-    HIDDEN_LAYERS = 2
+    HIDDEN_UNITS = 16
+    HIDDEN_LAYERS = 3
     OUTPUTS = 2

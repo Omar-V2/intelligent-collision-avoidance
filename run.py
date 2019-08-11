@@ -30,7 +30,12 @@ def static_environment():
     pygame.draw.circle(SCREEN, (255, 10, 0), TARGET_LOCATION, 10, 0)
 
 agents = create_population(POPULATION_SIZE)
-evolution = Evolution(agents, 10, 0.01, len(agents))
+evolution = Evolution(
+    agents,
+    EvolutionSettings.ELITISM,
+    EvolutionSettings.MUTATION_RATE,
+    EvolutionSettings.POPULATION_SIZE
+)
 obstacles = create_map()
 
 def run():
@@ -61,13 +66,13 @@ def run():
         static_environment()
         for obstacle in obstacles:
             obstacle.draw(SCREEN)
-            # obstacle.move(x_change, y_change)
+            # obstacle.move()
         for agent in evolution.population:
             agent.move(x_change, y_change)
             agent.update(SCREEN, obstacles)
-        #     agent.evaluate_fitness()
-        # if evolution.check_if_all_dead():
-        #     evolution.make_next_generation()
+            agent.evaluate_fitness()
+        if evolution.check_if_all_dead():
+            evolution.make_next_generation()
         pygame.display.update()
 
 
