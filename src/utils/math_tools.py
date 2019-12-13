@@ -80,3 +80,13 @@ def get_distance(vec_1, vec_2):
     delta_x = vec_2[0] - vec_1[0]
     delta_y = vec_2[1] - vec_1[1]
     return m.sqrt((delta_x**2) + (delta_y**2))
+
+def get_angle(pt_1, pt_2):
+    """
+    Computes the angle between the vector going from pt_1 to pt_2 and the x axis.
+    """
+    delta_x = pt_1[0] - pt_2[0]
+    delta_y = pt_2[1] - pt_1[1]
+    # negative because we have taken clockwise to be positive direction
+    radians = -m.atan2(delta_y, delta_x)
+    return m.degrees(radians)

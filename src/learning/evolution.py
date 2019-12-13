@@ -56,6 +56,7 @@ class Evolution:
         Employes the roulette wheel selection strategy to
         select a parent.
         see: https://en.wikipedia.org/wiki/Fitness_proportionate_selection
+        This works poorly when the fitness values are close to one another.
         """
         parent_index = bisect_left(
             cumulative_fitness, random.uniform(0, cumulative_fitness[-1]))
@@ -118,7 +119,7 @@ class Evolution:
         creating a child until n children have been created where
         n is the population size.
         """
-        cumulative_fitness = self._get_cumulative_fitness()
+        # cumulative_fitness = self._get_cumulative_fitness()
         next_generation = []
         for _ in range(self.population_size):
             parent_one = self._choose_parents()

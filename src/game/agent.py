@@ -3,8 +3,9 @@ import time
 import pygame
 import numpy as np
 
-from src.utils.math_tools import liangbarsky, get_distance
-from src.common.constants import GameSettings, AgentSettings
+from src.utils.math_tools import liangbarsky, get_distance, get_angle
+from src.common.constants import GameSettings
+from src.game.create_map import update_target
 from src.utils.text import display_text
 
 class Agent:
@@ -14,6 +15,7 @@ class Agent:
     fitness evalutation and dying.
     """
     death_count = 0
+    target_location = GameSettings.TARGET_LOCATION
 
     def __init__(self, x, y, size, field_of_view, nb_sensors, max_range, manager, brain):
         self.x = x
@@ -30,12 +32,13 @@ class Agent:
         self.alive = True
         self.brain = brain
         self.fitness = 0
-        self.time_alive = time.time()
+        self.birth_time = time.time()
+        self.death_timer = 15
         self.considered = False
         self.hit_target = False
         self.best_distance = 1e6
         self._attach_sensors(field_of_view, nb_sensors, max_range)
-    
+
     def move(self, x_change, y_change):
         """
         Handles the movement of the agent based on the output of the neural network.
@@ -49,7 +52,14 @@ class Agent:
                 [(sensor.reading / self.max_range) for sensor in self.sensors])
             speed = brain_output[0]
             angle = brain_output[1]
-            self.angle = np.interp(angle, [-1, 1], [-60, 60])
+            triggered = False
+            for sensor in self.sensors:
+                if sensor.reading < sensor.max_range:
+                    triggered = True
+            if triggered:
+                self.angle = np.interp(angle, [-1, 1], [-60, 60])
+            else:
+                self.angle = get_angle(Agent.target_location, (self.x, self.y))
             self.x += self.base_speed * speed * (m.cos(m.radians(self.angle)))
             self.y += self.base_speed * speed * (m.sin(m.radians(self.angle)))
 
@@ -62,41 +72,61 @@ class Agent:
         if self.alive:
             pygame.draw.circle(screen, self.colour,
                                (int(self.x), int(self.y)), self.size, 0)
+            self._collide_boundary()
+            self._collide_target()
             for sensor in self.sensors:
                 sensor.update()
                 sensor.draw(screen)
                 for obstacle in obstacles:
-                    self._collide(obstacle)
+                    self._collide_obstacle(obstacle)
                     if sensor.in_range(obstacle):
                         sensor.detect(screen, obstacle)
                     else:
                         if sensor.activated and sensor.current_obstacle == obstacle.id:
                             sensor.handle_obstacle_exit()
-        if self.alive:
-            if time.time() - self.time_alive > 6:
-                self.alive = False
-                Agent.death_count += 1
+                text = f'Sensor {sensor.tag} is : {sensor.reading}'
+                display_text(screen, text, sensor.tag*30)
+        # if self.alive:
+        #     if time.time() - self.birth_time > 10:
+        #         self.alive = False
+        #         Agent.death_count += 1
 
-    def _collide(self, obstacle):
+    def _collide_obstacle(self, obstacle):
         """
-        Checks for collision between the agent and the obstacle, or
-        between agent and map boundary. If there is a collision, the agent is killed.
+        Checks for collision between the agent and the obstacle.
+        If there is a collision, the agent is killed.
         """
         if self.alive:
-            target_distance = get_distance((self.x, self.y), GameSettings.TARGET_LOCATION)
-            if self.x <= 10 or self.y <= 10 or self.y >= GameSettings.HEIGHT - 20 \
-                or self.x >= GameSettings.WIDTH - 20:
-                self.alive = False
-                Agent.death_count += 1
             if obstacle.collide(self):
                 self.alive = False
                 Agent.death_count += 1
+
+    def _collide_target(self):
+        """
+        Cheks for collison between the agent and the target
+        """
+        if self.alive:
+            target_distance = get_distance((self.x, self.y), Agent.target_location)
             if target_distance <= self.size + 10:
+                Agent.target_location = update_target()
+
+    def _collide_boundary(self):
+        """
+        Checks for collision between the agent and the map boundary.
+        If there is a collision, the agent is killed.
+        """
+        if self.alive:
+            left_edge = self.x - self.size
+            right_edge = self.x + self.size
+            bottom_edge = self.y + self.size
+            top_edge = self.y - self.size
+            if left_edge <= 10 or top_edge <= 10 or bottom_edge >= GameSettings.HEIGHT - 10 \
+                or right_edge >= GameSettings.WIDTH - 10:
                 self.alive = False
-                self.hit_target = True
                 Agent.death_count += 1
 
-    def evaluate_fitness(self):
+
+    def evaluate_fitness_old(self):
         """
         Scores the agent based on how well it performed on the task.
         """
@@ -108,6 +138,14 @@ class Agent:
             target_factor = 1 if self.hit_target else 0
             self.fitness = (1 / distance_to_target) + 0.5 * (1 / self.best_distance) \
                 + 0.3 * target_factor
+
+    def evaluate_fitness(self):
+        """
+        Scores the agent based on how well it performed on the task.
+        """
+        if self.alive:
+            time_alive = time.time() - self.birth_time
+            self.fitness = time_alive
 
     def _attach_sensors(self, field_of_view, nb_sensors, max_range):
         interval = field_of_view / nb_sensors

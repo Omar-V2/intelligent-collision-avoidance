@@ -1,8 +1,10 @@
 import pygame
 from src.common.constants import GameSettings, EvolutionSettings
+from src.game.agent import Agent
 from src.game.create_population import create_population
-from src.game.create_map import create_map
+from src.game.create_map import create_map, create_pedestrians
 from src.game.obstacle import Rectangle, Circle
+from src.game.pedestrian import PedestrianManager
 from src.learning.evolution import Evolution
 
 # game settings
@@ -27,7 +29,7 @@ def static_environment():
     SCREEN.fill(BACKGROUND_COLOUR)
     pygame.draw.rect(SCREEN, (255, 255, 255),
                      (10, 10, WIDTH - 20, HEIGHT - 20), 1)
-    pygame.draw.circle(SCREEN, (255, 10, 0), TARGET_LOCATION, 10, 0)
+    pygame.draw.circle(SCREEN, (255, 10, 0), Agent.target_location, 10, 0)
 
 agents = create_population(POPULATION_SIZE)
 evolution = Evolution(
@@ -37,7 +39,8 @@ evolution = Evolution(
     EvolutionSettings.POPULATION_SIZE
 )
 obstacles = create_map()
-
+pedestrians = create_pedestrians()
+manager = PedestrianManager(pedestrians, 15)
 def run():
     """
     Begins the simulation
@@ -64,12 +67,16 @@ def run():
                 if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
                     y_change = 0
         static_environment()
-        for obstacle in obstacles:
-            obstacle.draw(SCREEN)
-            # obstacle.move()
+        for pedestrian in manager.current_pedestrians:
+            pedestrian.draw(SCREEN)
+            pedestrian.move()
+            manager.update(pedestrian)
+        # for obstacle in obstacles:
+        #     obstacle.draw(SCREEN)
+        #     obstacle.move()
         for agent in evolution.population:
             agent.move(x_change, y_change)
-            agent.update(SCREEN, obstacles)
+            agent.update(SCREEN, manager.current_pedestrians)
             agent.evaluate_fitness()
         if evolution.check_if_all_dead():
             evolution.make_next_generation()

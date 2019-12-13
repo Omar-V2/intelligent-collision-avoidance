@@ -5,15 +5,15 @@ class GameSettings:
     CAPTION = "Evolution Simulation"
 
 class AgentSettings:
-    START_X = 175
+    START_X = 100
     START_Y = 300
     SIZE = 10
     FIELD_OF_VIEW = 360
     NB_SENSORS = 9
-    MAX_RANGE = 75
+    MAX_RANGE = 35
 
 class EvolutionSettings:
-    POPULATION_SIZE = 100
+    POPULATION_SIZE = 25
     ELITISM = int(POPULATION_SIZE / 10)
     MUTATION_RATE = 0.005
 

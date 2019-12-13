@@ -22,7 +22,7 @@ class Circle:
         """
         Draws the circle on to the screen.
         """
-        pygame.draw.circle(screen, self.colour, (self.x, self.y), self.radius, 0)
+        pygame.draw.circle(screen, self.colour, (int(self.x), int(self.y)), self.radius, 0)
 
     def collide(self, agent):
         """
@@ -44,7 +44,7 @@ class Circle:
             self.radius
         )
         return intersection_pts
-    
+
     def move(self):
         """
         Makes the circle oscilate back and forth in the y
