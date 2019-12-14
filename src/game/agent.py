@@ -36,7 +36,7 @@ class Agent:
         self.best_distance = 1e6
         self._attach_sensors(field_of_view, nb_sensors, max_range)
     
-    def move(self, x_change, y_change):
+    def move(self):
         """
         Handles the movement of the agent based on the output of the neural network.
         The neural network outputs two values based on the sensor reading inputs.

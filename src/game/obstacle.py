@@ -44,7 +44,7 @@ class Circle:
             self.radius
         )
         return intersection_pts
-    
+
     def move(self):
         """
         Makes the circle oscilate back and forth in the y
