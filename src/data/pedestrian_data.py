@@ -15,10 +15,8 @@ def get_trajectories(data):
     trajectories = {}
     all_people = data['person id']
     people_array = all_people.unique()
-    people_list = list(set(all_people.values))
     for person in people_array:
         trajectory = data.loc[all_people == person]
-        print(trajectory.head)
         # convert from mm to cm, negative for y because pygame defines downards y as positve
         x_coords = trajectory['x'].values / 100.0
         y_coords = -trajectory['y'].values / 100.0
