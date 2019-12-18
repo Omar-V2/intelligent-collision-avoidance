@@ -43,8 +43,6 @@ class Agent:
         One output controls the speed and the other controls the direction.
         """
         if self.alive:
-            # self.x += x_change
-            # self.y += y_change
             brain_output = self.brain.forward(
                 [(sensor.reading / self.max_range) for sensor in self.sensors])
             speed = brain_output[0]
