@@ -38,8 +38,6 @@ We initialise a robot population and they will all interact with the envrionemnt
 ## Combining a Neural Network and Genetic Algorithm
 At this stage, you may be wondering how the two are related in this project. The neural networks weights essentially represent the candidate solution itself, and its these numerical values of the weights that the genetic algorithm operates on directly.
 
-## Results
-
 
 
 
