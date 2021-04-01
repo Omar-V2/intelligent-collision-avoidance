@@ -2,7 +2,7 @@
 
 In this project, agents/robots, learn to avoid both static and dynamic obstacles, with no prior knowledge of the enviornment that they operate in. Each robot is controlled by a neural network, the weights of the neural network are modified using a genetic algorithm. Over several generations, the robots achieve impressive behaviour.
 
-<img src="images/demo.gif" width="500">
+<img src="images/demo.gif" width="750">
 
 # The Simulation
 
